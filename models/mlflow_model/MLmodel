@@ -21,7 +21,7 @@ is_signature_from_type_hint: false
 mlflow_version: 3.17.1
 model_id: null
 model_size_bytes: 350781
-model_uuid: e1fe763072da4fdebcdd370c4db47a67
+model_uuid: 4460d8a4df054576b7e735cf5698e61c
 prompts: null
 saved_input_example_info:
   artifact_path: input_example.json
@@ -42,4 +42,4 @@ signature:
     2]}}]'
   params: null
 type_hint_from_example: false
-utc_time_created: '2026-10-17 16:17:09.840861'
+utc_time_created: '2026-10-20 05:21:48.730320'

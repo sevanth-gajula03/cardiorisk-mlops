@@ -1,6 +1,6 @@
 # Model comparison
 
-Generated 2026-10-17T16:17:09+00:00 - champion **logreg-eng** (registry version 1).
+Generated 2026-10-20T05:21:48+00:00 - champion **logreg-eng** (registry version 2).
 
 Selection rule: highest mean 5-fold CV ROC-AUC on the training split. Test metrics come from a stratified 20% hold-out that was never used for tuning.
 

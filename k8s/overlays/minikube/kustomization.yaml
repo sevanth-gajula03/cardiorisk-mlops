@@ -6,4 +6,4 @@ resources:
   - ../../base
 images:
   - name: cardiorisk-api
-    newTag: "2026.10.17.1617"
+    newTag: "2026.10.20.0521"
