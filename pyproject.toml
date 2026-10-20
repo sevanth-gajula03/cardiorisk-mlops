@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "heartrisk"
+version = "0.1.0"
+description = "Heart disease risk prediction with an end-to-end MLOps workflow"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+filterwarnings = [
+    # Third-party deprecations (matplotlib -> pyparsing) that we cannot fix here.
+    "ignore::DeprecationWarning:matplotlib.*",
+    # FastAPI's TestClient still wraps httpx; harmless for these tests.
+    "ignore:Using `httpx` with `starlette.testclient`",
+]

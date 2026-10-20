@@ -1,0 +1,78 @@
+# Central configuration for the CardioRisk project.
+# Every script reads from here so that paths and choices live in one place.
+
+project:
+  name: cardiorisk
+  random_seed: 42
+
+data:
+  source_url: https://archive.ics.uci.edu/static/public/45/heart+disease.zip
+  fallback_url: https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data
+  member: processed.cleveland.data
+  raw_dir: data/raw
+  raw_file: data/raw/processed.cleveland.data
+  manifest_file: data/raw/MANIFEST.json
+  clean_file: data/processed/heart_clean.csv
+  encoded_file: data/processed/heart_encoded.csv
+  quality_report: reports/data_quality.json
+
+columns:
+  numeric: [age, trestbps, chol, thalach, oldpeak]
+  ordinal: [ca]
+  binary: [sex, fbs, exang]
+  nominal: [cp, restecg, slope, thal]
+  target: target
+
+# Clinically plausible ranges used to flag bad readings during cleaning.
+# Values outside these limits are treated as missing and imputed.
+valid_ranges:
+  age: [18, 100]
+  trestbps: [70, 220]
+  chol: [100, 600]
+  thalach: [60, 220]
+  oldpeak: [0, 7]
+
+eda:
+  figures_dir: reports/figures
+  palette:
+    healthy: "#2a9d8f"
+    disease: "#e76f51"
+    accent: "#264653"
+
+features:
+  # Domain features motivated by the EDA (see notebooks/01_eda.ipynb, section 4.5).
+  engineered: [hr_reserve, age_x_male]
+  # oldpeak is right-skewed, so it gets a Yeo-Johnson transform instead of plain scaling.
+  skewed: [oldpeak]
+
+training:
+  test_size: 0.2
+  cv_folds: 5
+  # Model selection uses mean CV ROC-AUC; the hold-out test set is only reported.
+  selection_metric: roc_auc
+  # Train every model with and without the engineered features to measure their value.
+  feature_ablation: true
+  # After evaluation, refit the chosen configuration on all rows for the shipped model.
+  refit_on_full_data: true
+  model_dir: models
+  models:
+    logistic_regression:
+      C: [0.01, 0.03, 0.1, 0.3, 1.0, 3.0]
+      penalty: [l1, l2]
+      class_weight: [null, balanced]
+    random_forest:
+      n_estimators: [200, 400]
+      max_depth: [null, 4, 6]
+      min_samples_leaf: [1, 3, 5]
+      max_features: [sqrt, 0.5]
+    gradient_boosting:
+      n_estimators: [100, 200]
+      learning_rate: [0.03, 0.1]
+      max_depth: [2, 3]
+      subsample: [0.8, 1.0]
+
+mlflow:
+  tracking_uri: sqlite:///mlflow.db
+  artifact_dir: mlruns
+  experiment_name: cardiorisk-heart-disease
+  registered_model_name: cardiorisk-classifier
