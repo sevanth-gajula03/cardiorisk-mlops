@@ -1,0 +1,25 @@
+# Prometheus + Grafana for the CardioRisk API.
+#   kubectl apply -k k8s/monitoring
+# The Grafana admin password lives in a secret created by scripts/deploy_monitoring.sh.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: monitoring
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: cardiorisk-monitoring
+    includeSelectors: false
+resources:
+  - namespace.yaml
+  - prometheus/prometheus.yaml
+  - grafana/grafana.yaml
+configMapGenerator:
+  - name: prometheus-config
+    files: [prometheus/prometheus.yml]
+  - name: prometheus-rules
+    files: [prometheus/alerts.yml]
+  - name: grafana-datasources
+    files: [grafana/datasources.yaml]
+  - name: grafana-dashboard-providers
+    files: [grafana/providers.yaml]
+  - name: grafana-dashboards
+    files: [grafana/dashboards/cardiorisk.json]

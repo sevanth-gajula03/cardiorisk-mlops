@@ -3,7 +3,8 @@ export MPLBACKEND = Agg
 export MLFLOW_DISABLE_AGENT_HINT = 1
 
 .PHONY: setup data clean-data eda notebook train predict mlflow-ui serve \
-        docker-build docker-run docker-stop smoke deploy k8s-status k8s-delete load test all
+        docker-build docker-run docker-stop smoke deploy k8s-status k8s-delete load \
+        monitoring dashboard grafana prometheus test all
 
 IMAGE ?= cardiorisk-api
 TAG ?= latest
@@ -61,6 +62,18 @@ k8s-status:
 
 k8s-delete:
 	kubectl delete -k k8s/overlays/minikube --ignore-not-found
+
+monitoring:
+	scripts/deploy_monitoring.sh
+
+dashboard:
+	$(PYTHON) scripts/build_dashboard.py
+
+grafana:
+	kubectl -n monitoring port-forward svc/grafana 3000:3000
+
+prometheus:
+	kubectl -n monitoring port-forward svc/prometheus 9090:9090
 
 load:
 	$(PYTHON) scripts/load_test.py --url http://127.0.0.1:8090 --rps 20 --duration 120

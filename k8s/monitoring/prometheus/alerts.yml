@@ -1,0 +1,54 @@
+groups:
+  - name: cardiorisk-availability
+    rules:
+      - alert: CardioRiskApiDown
+        expr: sum(up{job="cardiorisk-api"}) < 1
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: No CardioRisk API pod is being scraped successfully.
+
+      - alert: CardioRiskHighServerErrors
+        expr: |
+          sum(rate(cardiorisk_http_requests_total{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(cardiorisk_http_requests_total[5m])), 1e-9) > 0.02
+        for: 2m
+        labels: {severity: warning}
+        annotations:
+          summary: More than 2% of requests are failing with 5xx.
+
+      - alert: CardioRiskSlowPredictions
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(cardiorisk_http_request_duration_seconds_bucket{path="/predict"}[5m]))) > 0.25
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: p95 latency of /predict is above 250 ms.
+
+  - name: cardiorisk-model
+    rules:
+      # Share of patients flagged as diseased; useful as a crude drift signal.
+      - record: cardiorisk:positive_rate:10m
+        expr: |
+          sum(rate(cardiorisk_predictions_total{label="heart_disease"}[10m]))
+            / clamp_min(sum(rate(cardiorisk_predictions_total[10m])), 1e-9)
+
+      - alert: CardioRiskPredictionDrift
+        # Training data had 46% positives; alert if live traffic drifts far from that.
+        expr: |
+          (cardiorisk:positive_rate:10m > 0.75 or cardiorisk:positive_rate:10m < 0.15)
+            and sum(rate(cardiorisk_predictions_total[10m])) > 0.1
+        for: 10m
+        labels: {severity: info}
+        annotations:
+          summary: "Positive prediction rate is {{ $value | humanizePercentage }} (training baseline ~46%)."
+
+      - alert: CardioRiskManyInvalidRequests
+        expr: |
+          sum(rate(cardiorisk_http_requests_total{status="422"}[5m]))
+            / clamp_min(sum(rate(cardiorisk_http_requests_total{path=~"/predict.*"}[5m])), 1e-9) > 0.2
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: Over 20% of prediction requests fail validation - a client may be sending bad data.
