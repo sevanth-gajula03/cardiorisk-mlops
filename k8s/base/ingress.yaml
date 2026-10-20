@@ -1,0 +1,21 @@
+# Ingress on the nginx controller: http://cardiorisk.local/ -> cardiorisk-api service.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cardiorisk-api
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: cardiorisk.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cardiorisk-api
+                port:
+                  name: http

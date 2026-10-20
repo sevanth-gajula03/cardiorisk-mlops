@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cardiorisk-api-config
+data:
+  LOG_LEVEL: "INFO"
+  MODEL_DIR: "/app/models"

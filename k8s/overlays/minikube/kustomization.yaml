@@ -1,0 +1,9 @@
+# Minikube overlay: pins the image tag to the model version that scripts/deploy_minikube.sh
+# builds and loads into the cluster (no registry needed).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+images:
+  - name: cardiorisk-api
+    newTag: "2026.10.17.1617"

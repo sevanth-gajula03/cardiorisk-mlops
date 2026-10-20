@@ -1,0 +1,15 @@
+# LoadBalancer service: gets an external IP from `minikube tunnel` (or a cloud LB on GKE/EKS/AKS).
+apiVersion: v1
+kind: Service
+metadata:
+  name: cardiorisk-api
+  labels:
+    app.kubernetes.io/name: cardiorisk-api
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: cardiorisk-api
+  ports:
+    - name: http
+      port: 8090
+      targetPort: http
