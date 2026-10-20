@@ -1,0 +1,8 @@
+{
+  "source": "https://archive.ics.uci.edu/static/public/45/heart+disease.zip",
+  "file": "processed.cleveland.data",
+  "downloaded_at": "2026-10-17T16:15:40+00:00",
+  "bytes": 18461,
+  "rows": 303,
+  "sha256": "a74b7efa387bc9d108d7d0115d831fe9b414b29ae7124f331b622b4efa0427c8"
+}

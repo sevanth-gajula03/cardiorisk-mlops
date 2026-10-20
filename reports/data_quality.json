@@ -1,0 +1,31 @@
+{
+  "rows_in": 303,
+  "missing_before": {
+    "ca": 4,
+    "thal": 2
+  },
+  "duplicates_removed": 0,
+  "out_of_range_flagged": {
+    "age": 0,
+    "trestbps": 0,
+    "chol": 0,
+    "thalach": 0,
+    "oldpeak": 0
+  },
+  "imputed": {
+    "ca": {
+      "rows": 4,
+      "value": 0.0
+    },
+    "thal": {
+      "rows": 2,
+      "value": 3.0
+    }
+  },
+  "rows_out": 303,
+  "class_counts": {
+    "0": 164,
+    "1": 139
+  },
+  "missing_after": 0
+}
