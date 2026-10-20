@@ -61,7 +61,7 @@ def class_balance(df: pd.DataFrame) -> plt.Figure:
     counts = df["target"].value_counts().sort_index()
     fig, ax = plt.subplots(figsize=(5.5, 4))
     bars = ax.bar(["No disease (0)", "Disease (1)"], counts.values, color=[pal[0], pal[1]], width=0.55)
-    for bar, n in zip(bars, counts.values):
+    for bar, n in zip(bars, counts.values, strict=True):
         ax.annotate(f"{n}\n({n / counts.sum():.0%})", (bar.get_x() + bar.get_width() / 2, n),
                     ha="center", va="bottom", fontsize=10, xytext=(0, 3), textcoords="offset points")
     ax.set_ylabel("Patients")
@@ -87,7 +87,8 @@ def missing_values(raw: pd.DataFrame) -> plt.Figure:
 def numeric_histograms(df: pd.DataFrame, numeric: list) -> plt.Figure:
     pal = _palette()
     fig, axes = plt.subplots(2, 3, figsize=(13, 7))
-    for ax, col in zip(axes.flat, numeric):
+    # 6 panels for 5 features: the last panel is filled separately below.
+    for ax, col in zip(axes.flat, numeric, strict=False):
         sns.histplot(data=df, x=col, hue="target", palette=pal, kde=True, element="step",
                      stat="density", common_norm=False, alpha=0.3, ax=ax)
         ax.set_xlabel(PRETTY.get(col, col))
@@ -107,7 +108,7 @@ def numeric_histograms(df: pd.DataFrame, numeric: list) -> plt.Figure:
 def numeric_boxplots(df: pd.DataFrame, numeric: list) -> plt.Figure:
     pal = _palette()
     fig, axes = plt.subplots(1, len(numeric), figsize=(15, 3.8))
-    for ax, col in zip(axes, numeric):
+    for ax, col in zip(axes, numeric, strict=True):
         sns.boxplot(data=df, x="target", y=col, hue="target", palette=pal, legend=False,
                     width=0.5, fliersize=3, ax=ax)
         ax.set_xticks([0, 1], ["No", "Yes"])
@@ -152,11 +153,11 @@ def categorical_disease_rate(df: pd.DataFrame, columns: list) -> plt.Figure:
     labelled = with_labels(df)
     fig, axes = plt.subplots(2, 3, figsize=(14, 8))
     overall = df["target"].mean()
-    for ax, col in zip(axes.flat, columns):
+    for ax, col in zip(axes.flat, columns, strict=True):
         stats = labelled.groupby(col, observed=True)["target"].agg(["mean", "size"]).sort_values("mean")
         colors = [pal[1] if m > overall else pal[0] for m in stats["mean"]]
         ax.barh(stats.index.astype(str), stats["mean"], color=colors)
-        for i, (m, n) in enumerate(zip(stats["mean"], stats["size"])):
+        for i, (m, n) in enumerate(zip(stats["mean"], stats["size"], strict=True)):
             ax.text(m + 0.01, i, f"{m:.0%}  (n={n})", va="center", fontsize=8)
         ax.axvline(overall, color="grey", ls="--", lw=1)
         ax.set_xlim(0, 1.15)
@@ -182,7 +183,7 @@ def age_band_risk(df: pd.DataFrame) -> plt.Figure:
         part = table[table["sex"] == sex]
         xs = range(len(part))
         ax.plot(xs, part["mean"], marker=marker, color=color, lw=2, label=sex)
-        for x, y, n in zip(xs, part["mean"], part["size"]):
+        for x, y, n in zip(xs, part["mean"], part["size"], strict=True):
             if n:
                 ax.annotate(f"n={n}", (x, y), textcoords="offset points", xytext=(0, 8),
                             ha="center", fontsize=8, color=color)

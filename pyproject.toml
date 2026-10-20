@@ -20,3 +20,20 @@ filterwarnings = [
     # FastAPI's TestClient still wraps httpx; harmless for these tests.
     "ignore:Using `httpx` with `starlette.testclient`",
 ]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+src = ["src", "tests", "scripts"]
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
+ignore = [
+    "B008",  # FastAPI Query(...) defaults in signatures are idiomatic
+]
+
+[tool.coverage.run]
+source = ["heartrisk"]
+omit = ["*/eda/plots.py"]

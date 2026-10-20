@@ -101,7 +101,8 @@ cells = [
     md("### 4.2 Continuous features"),
     code("plots.numeric_histograms(df, cfg['columns']['numeric']);"),
     code("plots.numeric_boxplots(df, cfg['columns']['numeric']);"),
-    code("df.groupby('target')[cfg['columns']['numeric']].median().T.rename(columns={0: 'no disease', 1: 'disease'})"),
+    code("(df.groupby('target')[cfg['columns']['numeric']].median().T\n"
+         "   .rename(columns={0: 'no disease', 1: 'disease'}))"),
     md("**Observations**\n\n"
        "- **thalach** (max heart rate) is the clearest separator: diseased patients peak around "
        "140 bpm vs ~160 bpm for healthy ones.\n"

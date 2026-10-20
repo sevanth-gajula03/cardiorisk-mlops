@@ -5,6 +5,11 @@ __pycache__/
 .venv/
 venv/
 .pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+test-reports/
+.ruff_cache/
 .ipynb_checkpoints/
 
 # OS / editors

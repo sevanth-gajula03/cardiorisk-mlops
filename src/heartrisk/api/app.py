@@ -70,10 +70,10 @@ def score(model: HeartRiskModel, patients: list[Patient], explain: bool) -> list
     start = time.perf_counter()
     try:
         results = model.predict([p.model_dump() for p in patients], explain=explain)
-    except Exception:
+    except Exception as exc:
         monitoring.PREDICTION_ERRORS.inc()
         log.exception("prediction failed")
-        raise HTTPException(status_code=500, detail="Prediction failed")
+        raise HTTPException(status_code=500, detail="Prediction failed") from exc
     monitoring.INFERENCE_LATENCY.observe(time.perf_counter() - start)
     for r in results:
         monitoring.PREDICTIONS.labels(r["label"], r["risk_band"]).inc()

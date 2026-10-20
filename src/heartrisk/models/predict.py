@@ -80,7 +80,7 @@ class HeartRiskModel:
         probs = self.pipeline.predict_proba(frame)[:, 1]
         factors = self.explain(frame) if explain else [None] * len(frame)
         results = []
-        for p, why in zip(probs, factors):
+        for p, why in zip(probs, factors, strict=True):
             p = float(p)
             label = int(p >= self.threshold)
             result = {
@@ -107,7 +107,7 @@ def main() -> None:
     records = payload if isinstance(payload, list) else [payload]
     model = HeartRiskModel.load(args.model_dir)
     log.info("Loaded model version %s (%s)", model.version, model.metadata["model_type"])
-    for record, result in zip(records, model.predict(records, explain=True)):
+    for record, result in zip(records, model.predict(records, explain=True), strict=True):
         print(json.dumps({"input": record, "output": result}))
 
 

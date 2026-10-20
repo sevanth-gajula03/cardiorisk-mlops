@@ -10,11 +10,11 @@ from sklearn.metrics import (
     average_precision_score,
     f1_score,
     make_scorer,
+    precision_recall_curve,
     precision_score,
     recall_score,
     roc_auc_score,
     roc_curve,
-    precision_recall_curve,
 )
 
 from heartrisk.config import load_config
@@ -51,10 +51,7 @@ def feature_importance(pipeline) -> pd.Series:
     """Signed coefficients for linear models, impurity importances for trees."""
     model = pipeline.named_steps["model"]
     names = pipeline.named_steps["preprocess"].get_feature_names_out()
-    if hasattr(model, "coef_"):
-        values = model.coef_.ravel()
-    else:
-        values = model.feature_importances_
+    values = model.coef_.ravel() if hasattr(model, "coef_") else model.feature_importances_
     return pd.Series(values, index=names).sort_values(key=np.abs, ascending=False)
 
 

@@ -27,7 +27,8 @@ def stat(title, expr, x, y, w=4, h=4, unit="short", decimals=None, thresholds=No
         "fieldConfig": {"defaults": {"unit": unit, "decimals": decimals,
                                      "thresholds": {"mode": "absolute", "steps": steps},
                                      "color": {"mode": "thresholds"}}, "overrides": []},
-        "options": {"colorMode": color_mode, "graphMode": "area", "textMode": text_mode, "reduceOptions": {"calcs": ["lastNotNull"]}},
+        "options": {"colorMode": color_mode, "graphMode": "area", "textMode": text_mode,
+                    "reduceOptions": {"calcs": ["lastNotNull"]}},
     }
 
 
