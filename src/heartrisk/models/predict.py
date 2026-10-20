@@ -18,7 +18,7 @@ from heartrisk.features import RAW_FEATURES
 log = logging.getLogger(__name__)
 
 # Probability cut-offs for the human-friendly risk band returned with each prediction.
-RISK_BANDS = [(0.3, "low"), (0.6, "moderate"), (1.01, "high")]
+RISK_BANDS = [(0.35, "low"), (0.6, "moderate"), (1.01, "high")]
 
 
 def risk_band(probability: float) -> str:
