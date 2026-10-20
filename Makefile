@@ -26,6 +26,8 @@ notebook:
 	$(PYTHON) scripts/build_eda_notebook.py
 	# Inline plots need Jupyter's own backend, so drop the Agg override for this step.
 	env -u MPLBACKEND jupyter nbconvert --to notebook --execute --inplace notebooks/01_eda.ipynb
+	$(PYTHON) scripts/build_model_notebook.py
+	env -u MPLBACKEND jupyter nbconvert --to notebook --execute --inplace notebooks/02_model_and_inference.ipynb
 
 train: clean-data
 	$(PYTHON) -m heartrisk.models.train

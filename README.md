@@ -19,7 +19,9 @@ and is packaged, tested, containerised and deployed with production-style toolin
 │   ├── raw/                    # downloaded UCI file + MANIFEST.json (sha256)
 │   └── processed/              # heart_clean.csv, heart_encoded.csv
 ├── models/                     # packaged champion model (joblib + MLflow format)
-├── notebooks/01_eda.ipynb      # executed EDA notebook
+├── notebooks/
+│   ├── 01_eda.ipynb            # executed EDA notebook
+│   └── 02_model_and_inference.ipynb  # model results, MLflow runs, inference demo
 ├── reports/
 │   ├── data_quality.json       # what cleaning changed
 │   ├── model_comparison.md     # auto-generated results table
@@ -221,6 +223,9 @@ Command line:
 ```bash
 make predict        # python -m heartrisk.models.predict --input samples/patients.json
 ```
+
+`notebooks/02_model_and_inference.ipynb` walks through the results and the same inference calls
+interactively (rebuild with `make notebook`).
 
 Each prediction returns `prediction`, `label`, `probability`, `confidence` and a `risk_band`
 (low < 0.3 <= moderate < 0.6 <= high).
