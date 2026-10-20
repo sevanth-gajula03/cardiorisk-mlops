@@ -1,0 +1,48 @@
+{
+  "model_name": "cardiorisk-classifier",
+  "model_version": "2026.10.17.1617",
+  "package_version": "0.1.0",
+  "model_type": "logistic_regression",
+  "engineered_features": true,
+  "params": {
+    "C": 0.1,
+    "class_weight": null,
+    "penalty": "l2"
+  },
+  "decision_threshold": 0.5,
+  "features": [
+    "age",
+    "sex",
+    "cp",
+    "trestbps",
+    "chol",
+    "fbs",
+    "restecg",
+    "thalach",
+    "exang",
+    "oldpeak",
+    "slope",
+    "ca",
+    "thal"
+  ],
+  "trained_at": "2026-10-17T16:17:09+00:00",
+  "trained_on_rows": 303,
+  "data_sha256": "d0021ed770110715dd171178f6a9f64f23e2c31e40664bbe73472f0e47658c14",
+  "sklearn_version": "1.5.2",
+  "mlflow_parent_run_id": "62c7c6989c6a4e9588786e0d0c9ef7e0",
+  "mlflow_tuning_run_id": "30b4c48571384486b4681e37ce284cff",
+  "metrics": {
+    "cv_accuracy": 0.8306,
+    "cv_precision": 0.8337,
+    "cv_recall": 0.7917,
+    "cv_f1": 0.8092,
+    "cv_roc_auc": 0.9152,
+    "test_accuracy": 0.8689,
+    "test_precision": 0.8125,
+    "test_recall": 0.9286,
+    "test_f1": 0.8667,
+    "test_roc_auc": 0.9481,
+    "test_avg_precision": 0.9281
+  },
+  "registry_version": 1
+}
