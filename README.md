@@ -33,6 +33,7 @@ and is packaged, tested, containerised and deployed with production-style toolin
 │       └── predict.py          # inference wrapper + CLI
 ├── tests/                      # pytest unit tests
 ├── screenshots/                # evidence for the report
+├── .github/workflows/ci.yml    # lint -> test -> train -> container pipeline
 ├── k8s/
 │   ├── base/                   # namespace, config, deployment, service, ingress, HPA, PDB
 │   ├── overlays/minikube/      # pins the image tag to the model version
@@ -221,6 +222,38 @@ Each prediction returns `prediction`, `label`, `probability`, `confidence` and a
 config, a deterministic split, the data checksum recorded in the manifest and model metadata,
 and preprocessing stored inside the model so nothing has to be re-implemented at serving time.
 
+## Part 5 - CI/CD pipeline (GitHub Actions)
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to `main`, on pull
+requests and on demand:
+
+```
+lint ──► test ──► train ──► docker
+manifests (in parallel)
+```
+
+| Job | What it does | Artifacts / output |
+|---|---|---|
+| **Lint** | `ruff check` (pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify), annotations inline on the PR | - |
+| **Validate Kubernetes manifests** | renders `k8s/overlays/minikube` and `k8s/monitoring` with kustomize and validates them with kubeconform (strict) | - |
+| **Unit tests** | 60 pytest tests with coverage | `test-reports` (JUnit XML, coverage XML + HTML); coverage % in the job summary |
+| **Train and evaluate** | downloads the data, cleans it, regenerates EDA figures, runs the full tuning session with MLflow, applies the **model quality gate**, scores the sample patients | `model`, `reports`, `mlflow-runs` (`mlflow.db` + `mlruns/`); comparison table and gate result in the job summary |
+| **Build and smoke-test container** | builds the image **with the model trained in this run**, starts it and runs `scripts/smoke_test.sh`; on `main` pushes `ghcr.io/<owner>/cardiorisk-api:<model-version>` and `:latest` | `container-logs`; image size in the summary |
+
+**Failing fast:** each job depends on the previous one, every step runs with `set -e`
+semantics, and the run fails if lint finds an issue, a test fails, the model misses the quality
+gate (`config/params.yaml -> training.quality_gate`: CV ROC-AUC >= 0.85, test ROC-AUC >= 0.85,
+test recall >= 0.80) or any smoke check fails. Logs for each step are in the Actions UI and the
+artifacts above.
+
+Run the same checks locally:
+
+```bash
+ruff check .
+pytest --cov
+python scripts/check_model_quality.py
+```
+
 ## Part 6 - Prediction API & container
 
 ### Endpoints
@@ -398,5 +431,5 @@ make predict
 ## Tests
 
 ```bash
-pytest -v
+pytest -v --cov        # 60 tests: data, features, model, evaluation, downloader, API
 ```

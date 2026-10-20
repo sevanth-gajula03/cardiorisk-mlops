@@ -55,6 +55,11 @@ training:
   # After evaluation, refit the chosen configuration on all rows for the shipped model.
   refit_on_full_data: true
   model_dir: models
+  # CI fails if a retrained champion falls below these (scripts/check_model_quality.py).
+  quality_gate:
+    cv_roc_auc: 0.85
+    test_roc_auc: 0.85
+    test_recall: 0.80
   models:
     logistic_regression:
       C: [0.01, 0.03, 0.1, 0.3, 1.0, 3.0]

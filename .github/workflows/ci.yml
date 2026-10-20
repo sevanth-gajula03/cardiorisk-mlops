@@ -1,0 +1,191 @@
+name: CI
+
+# lint -> test -> train (+ quality gate) -> build & smoke-test the container
+# Kubernetes manifests are validated in parallel. Any failing step fails the run.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.11"
+  MPLBACKEND: Agg
+  MLFLOW_DISABLE_AGENT_HINT: "1"
+  IMAGE_NAME: cardiorisk-api
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install ruff
+        run: pip install ruff==0.17.1
+      - name: Ruff
+        run: ruff check . --output-format=github
+
+  manifests:
+    name: Validate Kubernetes manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz \
+            | tar -xz -C /usr/local/bin kubeconform
+      - name: Render and validate
+        run: |
+          for dir in k8s/overlays/minikube k8s/monitoring; do
+            echo "::group::$dir"
+            kubectl kustomize "$dir" | kubeconform -strict -summary -ignore-missing-schemas -
+            echo "::endgroup::"
+          done
+
+  test:
+    name: Unit tests
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Pytest
+        run: |
+          mkdir -p test-reports
+          pytest -v --junitxml=test-reports/junit.xml \
+            --cov --cov-report=term --cov-report=xml:test-reports/coverage.xml \
+            --cov-report=html:test-reports/htmlcov
+      - name: Coverage summary
+        if: always()
+        run: |
+          python - <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          root = ET.parse("test-reports/coverage.xml").getroot()
+          print(f"### Test coverage: {float(root.get('line-rate')) * 100:.1f}%")
+          EOF
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: test-reports/
+
+  train:
+    name: Train and evaluate model
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Download dataset
+        run: python -m heartrisk.data.download --force
+      - name: Clean data
+        run: python -m heartrisk.data.clean
+      - name: EDA figures
+        run: python -m heartrisk.eda.plots
+      - name: Train, tune and track with MLflow
+        run: python -m heartrisk.models.train
+      - name: Model quality gate
+        run: python scripts/check_model_quality.py --summary "$GITHUB_STEP_SUMMARY"
+      - name: Sample predictions
+        run: python -m heartrisk.models.predict --input samples/patients.json
+      - name: Results summary
+        run: cat reports/model_comparison.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: model
+          path: |
+            models/
+            data/raw/MANIFEST.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: reports/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mlflow-runs
+          path: |
+            mlflow.db
+            mlruns/
+          include-hidden-files: true
+
+  docker:
+    name: Build and smoke-test container
+    needs: train
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use the model trained in this run
+        uses: actions/download-artifact@v4
+        with:
+          name: model
+      - name: Read model version
+        id: meta
+        run: |
+          echo "version=$(jq -r .model_version models/metadata.json)" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:ci
+            ghcr.io/${{ steps.meta.outputs.owner }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            MODEL_VERSION=${{ steps.meta.outputs.version }}
+            GIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run container
+        run: docker run -d --name cardiorisk -p 8080:8000 ${{ env.IMAGE_NAME }}:ci
+      - name: Smoke test
+        run: scripts/smoke_test.sh http://localhost:8080
+      - name: Container logs
+        if: always()
+        run: docker logs cardiorisk > container.log 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: container-logs
+          path: container.log
+      - name: Push to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker push ghcr.io/${{ steps.meta.outputs.owner }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+          docker push ghcr.io/${{ steps.meta.outputs.owner }}/${{ env.IMAGE_NAME }}:latest
+      - name: Image summary
+        run: |
+          {
+            echo "### Container image"
+            echo "- Model version: \`${{ steps.meta.outputs.version }}\`"
+            echo "- Size: $(docker image inspect ${{ env.IMAGE_NAME }}:ci --format '{{.Size}}' | numfmt --to=iec)"
+          } >> "$GITHUB_STEP_SUMMARY"
